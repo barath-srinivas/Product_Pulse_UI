@@ -1,0 +1,64 @@
+{
+  "section_anchor": "groww-2026-W24",
+  "product_id": "groww",
+  "iso_week": "2026-W24",
+  "document_id": "<GOOGLE_DOC_ID>",
+  "blocks": [
+    {
+      "type": "heading1",
+      "text": "Groww — Weekly Review Pulse — 2026-W24 [anchor:groww-2026-W24]"
+    },
+    {
+      "type": "paragraph",
+      "text": "Period: Last 10 weeks (Google Play) · Reviews analyzed: 32"
+    },
+    {
+      "type": "heading2",
+      "text": "Top themes"
+    },
+    {
+      "type": "bullet",
+      "text": "1. Theme cluster 0 — Users mention: The app freezes exactly when the market opens every single morning."
+    },
+    {
+      "type": "bullet",
+      "text": "2. Theme cluster 2 — Users mention: Very easy to use interface for beginners starting their investment journey."
+    },
+    {
+      "type": "bullet",
+      "text": "3. Theme cluster 1 — Users mention: Brokerage charges are too high compared to other discount brokers available."
+    },
+    {
+      "type": "heading2",
+      "text": "Real user quotes"
+    },
+    {
+      "type": "bullet",
+      "text": "\"The app freezes exactly when the market opens every single morning.\""
+    },
+    {
+      "type": "bullet",
+      "text": "\"Very easy to use interface for beginners starting their investment journey.\""
+    },
+    {
+      "type": "bullet",
+      "text": "\"Brokerage charges are too high compared to other discount brokers available.\""
+    },
+    {
+      "type": "heading2",
+      "text": "Action ideas"
+    },
+    {
+      "type": "bullet",
+      "text": "Investigate reported issues and prioritize fixes."
+    },
+    {
+      "type": "heading2",
+      "text": "Who this helps"
+    },
+    {
+      "type": "paragraph",
+      "text": "This pulse helps product and support teams spot recurring Groww feedback themes including: Theme cluster 0, Theme cluster 2, Theme cluster 1."
+    }
+  ]
+}

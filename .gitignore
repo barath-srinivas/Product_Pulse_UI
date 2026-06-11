@@ -1,0 +1,36 @@
+# Environment and secrets
+.env
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+
+# Project data (audit, ledger, embeddings)
+data/
+runs/
+
+# MCP credentials
+mcp-servers/*/credentials/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config overrides (use products.example.yaml as template)
+config/products.yaml
+
+# Personal sign-off copies (use *-signoff.template.md to create)
+docs/staging-signoff.md
+docs/production-signoff.md

@@ -1,0 +1,12 @@
+{
+  "idempotency_key": "pulse/groww/2026-W24",
+  "to": [
+    "product@groww.example",
+    "support@groww.example"
+  ],
+  "cc": [],
+  "subject": "Groww Weekly Review Pulse — 2026-W24",
+  "body_html": "<p>This week&#x27;s Groww Review Pulse (2026-W24) summarizes 32 Google Play reviews. Below are the top themes; the full report with quotes and action ideas is in the shared Google Doc.</p><p><strong>Top themes:</strong></p><ul><li>The app freezes exactly when the market opens every singl...</li><li>Very easy to use interface for beginners starting their i...</li><li>Brokerage charges are too high compared to other discount...</li></ul><p><a href=\"https://docs.google.com/document/d/&lt;GOOGLE_DOC_ID&gt;/edit\">Read full report</a></p>",
+  "body_text": "This week's Groww Review Pulse (2026-W24) summarizes 32 Google Play reviews. Below are the top themes; the full report with quotes and action ideas is in the shared Google Doc.\n\nTop themes:\n• The app freezes exactly when the market opens every singl...\n• Very easy to use interface for beginners starting their i...\n• Brokerage charges are too high compared to other discount...\n\nRead full report: https://docs.google.com/document/d/<GOOGLE_DOC_ID>/edit",
+  "doc_url": "https://docs.google.com/document/d/<GOOGLE_DOC_ID>/edit"
+}

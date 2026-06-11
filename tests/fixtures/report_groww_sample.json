@@ -1,0 +1,60 @@
+{
+  "product_id": "groww",
+  "iso_week": "2026-W24",
+  "period_label": "Last 10 weeks (Google Play)",
+  "generated_at": "2026-06-08T12:00:00+05:30",
+  "review_count": 32,
+  "themes": [
+    {
+      "cluster_id": 0,
+      "theme_name": "Theme cluster 0",
+      "theme_summary": "Users mention: The app freezes exactly when the market opens every single morning.",
+      "quotes": [
+        {
+          "text": "The app freezes exactly when the market opens every single morning.",
+          "review_id": "perf-01",
+          "validation": "exact"
+        }
+      ],
+      "action_ideas": [
+        "Investigate reported issues and prioritize fixes."
+      ],
+      "rank": 1
+    },
+    {
+      "cluster_id": 2,
+      "theme_name": "Theme cluster 2",
+      "theme_summary": "Users mention: Very easy to use interface for beginners starting their investment journey.",
+      "quotes": [
+        {
+          "text": "Very easy to use interface for beginners starting their investment journey.",
+          "review_id": "pos-01",
+          "validation": "exact"
+        }
+      ],
+      "action_ideas": [
+        "Investigate reported issues and prioritize fixes."
+      ],
+      "rank": 2
+    },
+    {
+      "cluster_id": 1,
+      "theme_name": "Theme cluster 1",
+      "theme_summary": "Users mention: Brokerage charges are too high compared to other discount brokers available.",
+      "quotes": [
+        {
+          "text": "Brokerage charges are too high compared to other discount brokers available.",
+          "review_id": "fee-01",
+          "validation": "exact"
+        }
+      ],
+      "action_ideas": [
+        "Investigate reported issues and prioritize fixes."
+      ],
+      "rank": 3
+    }
+  ],
+  "audience_blurb": "This pulse helps product and support teams spot recurring Groww feedback themes including: Theme cluster 0, Theme cluster 2, Theme cluster 1.",
+  "llm_provider": "groq",
+  "llm_model": "llama-3.3-70b-versatile"
+}

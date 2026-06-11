@@ -1,0 +1,18 @@
+# Staging config template (Phase 8)
+# Copy to config/products.yaml for staging E2E runs:
+#   cp config/products.staging.example.yaml config/products.yaml
+#
+# Use a dedicated staging Google Doc and dev/test recipient emails only.
+# pulse.yaml must keep delivery.email_mode: draft (no send on hosted API v1).
+
+products:
+  groww:
+    display_name: Groww
+    google_play_package: com.nextbillion.groww
+    google_doc:
+      title: "Weekly Review Pulse — Groww (Staging)"
+      document_id: "<STAGING_GOOGLE_DOC_ID>"
+    stakeholders:
+      to:
+        - you@example.com
+      cc: []

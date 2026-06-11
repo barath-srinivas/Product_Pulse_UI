@@ -1,0 +1,36 @@
+review_window_weeks: 10
+min_reviews_required: 50
+ingest:
+  min_words: 8
+  english_only: true
+  reject_emojis: true
+clustering:
+  umap_n_components: 5
+  umap_n_neighbors: 15
+  umap_random_state: 42
+  hdbscan_min_cluster_size: 8
+  hdbscan_min_samples: 3
+  top_k_themes: 5
+embeddings:
+  provider: bge
+  model: BAAI/bge-small-en-v1.5
+  batch_size: 64
+llm:
+  provider: groq
+  model: llama-3.3-70b-versatile
+  temperature: 0.2
+  max_tokens_per_request: 4096
+  max_tokens_per_run: 20000
+  rate_limits:
+    requests_per_minute: 30
+    requests_per_day: 1000
+    tokens_per_minute: 12000
+    tokens_per_day: 100000
+safety:
+  max_quote_length: 280
+  pii_scrub: true
+delivery:
+  email_mode: draft
+timezone: Asia/Kolkata
+schedule:
+  cron: "0 8 * * 1"

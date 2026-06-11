@@ -1,0 +1,11 @@
+{
+  "googleMcpDelivery": {
+    "baseUrl": "https://web-production-facdf.up.railway.app",
+    "apiKeyEnv": "GOOGLE_MCP_API_KEY",
+    "endpoints": {
+      "health": "/health",
+      "appendToDoc": "/append_to_doc",
+      "createEmailDraft": "/create_email_draft"
+    }
+  }
+}

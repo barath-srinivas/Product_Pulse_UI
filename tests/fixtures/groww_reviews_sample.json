@@ -1,0 +1,48 @@
+[
+  {
+    "reviewId": "sample-review-001",
+    "userName": "Test User One",
+    "content": "The app freezes exactly when the market opens, very frustrating.",
+    "score": 2,
+    "at": "2026-05-15T10:30:00",
+    "thumbsUpCount": 12,
+    "reviewCreatedVersion": "16.2.0",
+    "appVersion": "16.2.0"
+  },
+  {
+    "reviewId": "sample-review-002",
+    "userName": "Test User Two",
+    "content": "Support takes days to reply and doesn't solve the issue.",
+    "score": 1,
+    "at": "2026-04-20T08:00:00",
+    "thumbsUpCount": 5,
+    "reviewCreatedVersion": "16.1.0",
+    "appVersion": "16.1.0"
+  },
+  {
+    "reviewId": "sample-review-003",
+    "userName": "Test User Three",
+    "content": "Good for beginners but lacks detailed analysis tools.",
+    "score": 4,
+    "at": "2026-03-10T14:15:00",
+    "thumbsUpCount": 3,
+    "reviewCreatedVersion": "15.9.0",
+    "appVersion": "15.9.0"
+  },
+  {
+    "userName": "No Id User",
+    "content": "Login session times out during peak market hours every day.",
+    "score": 2,
+    "at": "2026-05-01T09:00:00",
+    "thumbsUpCount": 0,
+    "reviewCreatedVersion": "16.0.0",
+    "appVersion": "16.0.0"
+  },
+  {
+    "reviewId": "sample-review-empty",
+    "userName": "Empty Body",
+    "content": "   ",
+    "score": 3,
+    "at": "2026-05-02T09:00:00"
+  }
+]

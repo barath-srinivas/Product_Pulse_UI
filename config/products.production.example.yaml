@@ -1,0 +1,20 @@
+# Production config template (Phase 9 — draft-mode go-live)
+# Copy to config/products.yaml for scheduled production runs:
+#   cp config/products.production.example.yaml config/products.yaml
+#
+# Keep delivery.email_mode: draft in config/pulse.yaml until the hosted
+# Railway API exposes send. Drafts land in the OAuth-connected Gmail inbox;
+# operators send manually or extend the MCP server for automated send.
+
+products:
+  groww:
+    display_name: Groww
+    google_play_package: com.nextbillion.groww
+    google_doc:
+      title: "Weekly Review Pulse — Groww"
+      document_id: 1tABFYE0jxAB5xE9TjKk1kTbDY3CW9FUZsw7g2firAlw
+    stakeholders:
+      to:
+        - barath9677081188@gmail.com
+        - barathsrinivasan@outlook.com
+      cc: []

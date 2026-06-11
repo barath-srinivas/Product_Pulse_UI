@@ -1,0 +1,50 @@
+[project]
+name = "product-review-pulse"
+version = "0.1.0"
+description = "Weekly Product Review Pulse for Groww (Google Play reviews)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-play-scraper>=1.2.7",
+    "groq>=0.11",
+    "hdbscan>=0.8.33",
+    "langdetect>=1.0.9",
+    "numpy>=1.26",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "scikit-learn>=1.4",
+    "sentence-transformers>=3.0",
+    "umap-learn>=0.5.6",
+]
+
+[project.scripts]
+pulse = "pulse.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pulse"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: live network or API tests (RUN_LIVE_INGEST=1 or RUN_LIVE_GROQ=1)",
+    "staging: live staging E2E (RUN_STAGING_E2E=1 and GOOGLE_MCP_API_KEY)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
