@@ -96,6 +96,46 @@ Get-Content (Get-ChildItem runs\scheduler\*.log | Sort-Object LastWriteTime -Des
 
 ---
 
+## GitHub Actions (Railway production)
+
+Use this when `pulse-api` runs on **Railway** and you want an external cron instead of a local VM, laptop, or Railway Cron.
+
+Workflow: [`.github/workflows/scheduler.yml`](../.github/workflows/scheduler.yml)
+
+| Setting | Value |
+|---------|--------|
+| Schedule | Monday **08:00 IST** (`30 2 * * 1` UTC — GitHub Actions uses UTC) |
+| Trigger | `POST /api/runs` with `{"product":"groww"}` |
+| Poll | `GET /api/runs/jobs/{job_id}` until `completed` or `failed` |
+| Manual run | **Actions → Weekly Pulse Scheduler → Run workflow** |
+
+### Setup
+
+1. Merge the workflow to your **default branch** (`main`). Scheduled runs only fire from the default branch.
+2. Add repository secret **Settings → Secrets and variables → Actions**:
+
+| Secret | Value |
+|--------|--------|
+| `PULSE_API_URL` | Railway `pulse-api` base URL (no trailing slash), e.g. `https://productpulseui-production.up.railway.app` |
+
+3. Confirm Railway has production env vars (`GROQ_API_KEY`, `GOOGLE_MCP_API_KEY`, `CORS_ORIGINS`) and `config/products.yaml` points at the production Doc.
+
+### Verify
+
+- **GitHub:** Actions tab → latest **Weekly Pulse Scheduler** run → green check.
+- **Operator UI:** run appears under recent runs; pipeline steps reach `completed`.
+- **CLI (against production API):** `pulse status --product groww` from Railway shell, or check the dashboard.
+
+**Notes**
+
+- Same idempotency as local runs: a second trigger the same ISO week is skipped (EC-TIME-06).
+- GitHub may delay scheduled workflows by a few minutes under load; the cron still targets Monday 08:00 IST.
+- Logs live in the GitHub Actions run output, not `runs/scheduler/` (that path is for local wrapper scripts).
+
+See also [`deploymentplan.md`](deploymentplan.md) §3.8 (external cron options).
+
+---
+
 ## Post-run verification
 
 ```bash

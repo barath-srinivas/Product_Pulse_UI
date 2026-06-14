@@ -1,0 +1,66 @@
+name: Weekly Pulse Scheduler
+
+on:
+  schedule:
+    # Monday 08:00 IST (UTC+5:30) = Monday 02:30 UTC
+    - cron: "30 2 * * 1"
+  workflow_dispatch:
+
+jobs:
+  pulse-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Trigger weekly pulse run
+        id: trigger
+        env:
+          PULSE_API_URL: ${{ secrets.PULSE_API_URL }}
+        run: |
+          if [ -z "${PULSE_API_URL}" ]; then
+            echo "PULSE_API_URL secret is not set. Add it in GitHub → Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+          response="$(curl --fail-with-body --silent --show-error \
+            -X POST "${PULSE_API_URL%/}/api/runs" \
+            -H "Content-Type: application/json" \
+            -d '{"product":"groww"}')"
+          echo "trigger_response=${response}"
+          job_id="$(echo "${response}" | jq -r '.job_id')"
+          if [ -z "${job_id}" ] || [ "${job_id}" = "null" ]; then
+            echo "No job_id in response: ${response}"
+            exit 1
+          fi
+          echo "job_id=${job_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Poll run status
+        env:
+          PULSE_API_URL: ${{ secrets.PULSE_API_URL }}
+          JOB_ID: ${{ steps.trigger.outputs.job_id }}
+        run: |
+          deadline=$(( $(date +%s) + 6900 ))  # ~115 minutes
+          while [ "$(date +%s)" -lt "${deadline}" ]; do
+            status="$(curl --fail-with-body --silent --show-error \
+              "${PULSE_API_URL%/}/api/runs/jobs/${JOB_ID}")"
+            job_status="$(echo "${status}" | jq -r '.status')"
+            iso_week="$(echo "${status}" | jq -r '.iso_week // empty')"
+            echo "status=${job_status} week=${iso_week}"
+
+            case "${job_status}" in
+              completed)
+                echo "Weekly pulse run completed."
+                exit 0
+                ;;
+              failed)
+                error="$(echo "${status}" | jq -r '.error // empty')"
+                echo "Weekly pulse run failed: ${error}"
+                exit 1
+                ;;
+            esac
+
+            sleep 30
+          done
+
+          echo "Timed out waiting for job ${JOB_ID} to finish."
+          exit 1
