@@ -2,7 +2,6 @@
 name = "product-review-pulse"
 version = "0.1.0"
 description = "Weekly Product Review Pulse for Groww (Google Play reviews)"
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "google-play-scraper>=1.2.7",

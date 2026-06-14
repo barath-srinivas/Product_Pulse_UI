@@ -89,8 +89,10 @@ cd ui && npm install && npm run dev   # → http://localhost:5173
 | Setting | Value |
 |---------|--------|
 | Builder | Nixpacks (from `railway.toml`) |
-| Install command | `pip install -e ".[ui]"` |
+| Install command | `pip install ".[ui]"` (set in `nixpacks.toml`) |
 | Start command | `pulse-api` |
+
+> **Note:** Nixpacks does not copy `README.md` into the Docker build context before `pip install .`, which breaks hatchling if `pyproject.toml` declares `readme = "README.md"`. This repo avoids that field and uses `nixpacks.toml` for the `[ui]` install.
 
 `railway.toml` already defines:
 
@@ -398,6 +400,7 @@ ORDER BY iso_week DESC;
 | File | Role in deploy |
 |------|----------------|
 | [`railway.toml`](../railway.toml) | Nixpacks builder, start command, health check |
+| [`nixpacks.toml`](../nixpacks.toml) | Install `pip install ".[ui]"` (avoids README.md build error) |
 | [`ui/vercel.json`](../ui/vercel.json) | SPA rewrites for client-side routing |
 | [`ui/vite.config.ts`](../ui/vite.config.ts) | Dev proxy; build output `dist/` |
 | [`pyproject.toml`](../pyproject.toml) | Python deps; `pulse-api` console script |

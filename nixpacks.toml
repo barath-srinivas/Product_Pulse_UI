@@ -1,0 +1,7 @@
+# Railway/Nixpacks: default `pip install .` omits README.md from the build
+# context (hatchling error). Install with [ui] extras for pulse-api (FastAPI).
+[phases.install]
+cmds = ["pip install \".[ui]\""]
+
+[start]
+cmd = "pulse-api"
