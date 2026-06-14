@@ -88,11 +88,11 @@ cd ui && npm install && npm run dev   # → http://localhost:5173
 
 | Setting | Value |
 |---------|--------|
-| Builder | Nixpacks (from `railway.toml`) |
-| Install command | *(default)* `pip install .` |
+| Builder | Dockerfile (see `Dockerfile`) — full source copied before `pip install .` |
+| Install | `pip install .` inside Docker build |
 | Start command | `pulse-api` |
 
-> **Note:** Nixpacks does not copy `README.md` into the Docker build context before `pip install .`, which breaks hatchling if `pyproject.toml` declares `readme = "README.md"`. This repo omits that field. `fastapi` and `uvicorn` are in main dependencies so the default Nixpacks install works without a custom install phase.
+> **Note:** Nixpacks copies only `pyproject.toml` before `pip install .`, which installs the console script but not the `pulse` package (`ModuleNotFoundError`). The Dockerfile copies the full repo first.
 
 `railway.toml` already defines:
 
@@ -399,7 +399,8 @@ ORDER BY iso_week DESC;
 
 | File | Role in deploy |
 |------|----------------|
-| [`railway.toml`](../railway.toml) | Nixpacks builder, start command, health check |
+| [`Dockerfile`](../Dockerfile) | Full-source Docker build (fixes `ModuleNotFoundError: pulse`) |
+| [`railway.toml`](../railway.toml) | Dockerfile builder, start command, health check |
 | [`ui/vercel.json`](../ui/vercel.json) | SPA rewrites for client-side routing |
 | [`ui/vite.config.ts`](../ui/vite.config.ts) | Dev proxy; build output `dist/` |
 | [`pyproject.toml`](../pyproject.toml) | Python deps; `pulse-api` console script |

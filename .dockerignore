@@ -1,0 +1,34 @@
+# Git and local env
+.git
+.gitignore
+.venv
+venv
+.env
+.env.*
+
+# Runtime data (use Railway volume for runs/)
+data
+runs
+
+# Frontend (deployed separately on Vercel)
+ui
+
+# Python caches and test artifacts
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+*.egg-info
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+*.mp4
+
+# Docs and media not needed at runtime
+docs
+tests
+scripts
+mcp-servers
