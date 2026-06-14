@@ -342,7 +342,7 @@ See [`mcp-servers/README.md`](../mcp-servers/README.md).
 | Dashboard empty / 404 on API | No `runs/groww/*/report.json` | `seed-demo`, `backfill`, or `pulse run` on Railway |
 | CORS error in browser | `CORS_ORIGINS` missing Vercel URL | Add exact origin (scheme + host, no path); redeploy Railway |
 | API calls hit `localhost` from Vercel | `VITE_API_URL` unset | Set on Vercel Production env; redeploy |
-| `pulse-api` crash on start | Missing deps | Default Nixpacks install: `pip install .` |
+| `pulse-api` crash on start | Slow ML import or OOM | Ensure `pulse.pipeline.__init__` stays lightweight; check Railway logs |
 | Data lost after redeploy | No volume on `runs/` | Attach Railway volume at `/app/runs` |
 | Run button fails | Missing secrets or config | Check Railway logs; verify `GROQ_API_KEY`, `products.yaml` |
 | Delivery fails | MCP key mismatch or OAuth expired | Verify `GOOGLE_MCP_API_KEY`; check MCP server health |

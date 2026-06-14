@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from pulse.api.schemas import PipelineStep, PipelineStepStatus
 from pulse.config import current_iso_week, load_config, normalize_iso_week
 from pulse.ledger.store import LedgerStore
-from pulse.orchestrator import OrchestratorError, PulseOrchestrator
 
 PIPELINE_STEP_DEFS: list[tuple[str, str]] = [
     ("reviews_retrieved", "Reviews Retrieved"),
@@ -132,6 +131,8 @@ class RunExecutor:
             return
 
         config = load_config(include_mcp=not dry_run)
+        from pulse.orchestrator import OrchestratorError, PulseOrchestrator
+
         orchestrator = PulseOrchestrator(config)
         state.update(status="ingesting")
 

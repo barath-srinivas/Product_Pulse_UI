@@ -1,6 +1,4 @@
 """Phase 2 reasoning pipeline: scrub → embed → cluster → Groq LLM → validate."""
 
-from pulse.pipeline.models import PulseReport, ReasoningResult
-from pulse.pipeline.reasoning import run_reasoning_pipeline
-
-__all__ = ["PulseReport", "ReasoningResult", "run_reasoning_pipeline"]
+# Keep this module lightweight — pulse-api imports pulse.pipeline.models at startup.
+# Eager imports here previously pulled torch/umap/hdbscan and broke Railway healthchecks.
