@@ -14,5 +14,6 @@ COPY . .
 RUN pip install --no-cache-dir .
 
 ENV PYTHONUNBUFFERED=1
+ENV PULSE_PROJECT_ROOT=/app
 
 CMD ["pulse-api"]

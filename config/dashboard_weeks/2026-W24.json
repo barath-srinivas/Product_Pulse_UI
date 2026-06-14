@@ -1,0 +1,64 @@
+{
+  "product_id": "groww",
+  "iso_week": "2026-W24",
+  "period_label": "Last 10 weeks (Google Play)",
+  "generated_at": "2026-06-08T08:00:00+05:30",
+  "review_count": 1247,
+  "avg_rating": 3.9,
+  "sentiment": { "positive_pct": 67.0, "negative_pct": 23.0, "neutral_pct": 10.0 },
+  "themes": [
+    {
+      "cluster_id": 0,
+      "theme_name": "App Performance Issues",
+      "theme_summary": "Lag, crashes during trading hours; login and session timeouts.",
+      "quotes": [{ "text": "The app freezes exactly when the market opens.", "review_id": "p1", "validation": "exact" }],
+      "action_ideas": ["Scale infra during market hours."],
+      "rank": 1,
+      "review_count": 399,
+      "review_share_pct": 32.0
+    },
+    {
+      "cluster_id": 1,
+      "theme_name": "Customer Support Delays",
+      "theme_summary": "Slow responses and unresolved support tickets.",
+      "quotes": [{ "text": "Support takes days to reply.", "review_id": "p2", "validation": "exact" }],
+      "action_ideas": ["Improve support SLA visibility."],
+      "rank": 2,
+      "review_count": 299,
+      "review_share_pct": 24.0
+    },
+    {
+      "cluster_id": 2,
+      "theme_name": "Missing Analytics Features",
+      "theme_summary": "Users want advanced portfolio analytics and clearer navigation.",
+      "quotes": [{ "text": "Good for beginners but lacks detailed analysis tools.", "review_id": "p3", "validation": "exact" }],
+      "action_ideas": ["Enhance power-user analytics."],
+      "rank": 3,
+      "review_count": 224,
+      "review_share_pct": 18.0
+    },
+    {
+      "cluster_id": 3,
+      "theme_name": "Login Issues",
+      "theme_summary": "OTP failures and session drops during peak hours.",
+      "quotes": [{ "text": "Cannot login during market open.", "review_id": "p4", "validation": "exact" }],
+      "action_ideas": ["Stabilize auth during peak load."],
+      "rank": 4,
+      "review_count": 150,
+      "review_share_pct": 12.0
+    },
+    {
+      "cluster_id": 4,
+      "theme_name": "App Crashes",
+      "theme_summary": "Unexpected crashes on order placement and portfolio refresh.",
+      "quotes": [{ "text": "App crashed while placing an order.", "review_id": "p5", "validation": "exact" }],
+      "action_ideas": ["Improve crash reporting and hotfix cadence."],
+      "rank": 5,
+      "review_count": 175,
+      "review_share_pct": 14.0
+    }
+  ],
+  "audience_blurb": "This pulse helps product, support, and leadership teams prioritize Groww feedback.",
+  "llm_provider": "groq",
+  "llm_model": "llama-3.3-70b-versatile"
+}

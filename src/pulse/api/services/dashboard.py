@@ -62,9 +62,13 @@ def list_available_weeks(product_id: str, ledger: LedgerStore | None = None) -> 
 
 
 def seed_reports_from_fixtures() -> None:
-    """Copy multi-week demo reports into runs/ for local dashboard dev."""
-    fixture_dir = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "dashboard_weeks"
-    if not fixture_dir.is_dir():
+    """Copy multi-week demo reports into runs/ for dashboard dev/demo."""
+    root = get_project_root()
+    for relative in (Path("config/dashboard_weeks"), Path("tests/fixtures/dashboard_weeks")):
+        fixture_dir = root / relative
+        if fixture_dir.is_dir():
+            break
+    else:
         return
     for path in sorted(fixture_dir.glob("*.json")):
         report = PulseReport.model_validate_json(path.read_text(encoding="utf-8"))

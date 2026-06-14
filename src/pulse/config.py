@@ -181,8 +181,22 @@ class AppConfig(BaseModel):
 
 
 def get_project_root() -> Path:
-    """Return repository root (parent of src/)."""
-    return Path(__file__).resolve().parent.parent.parent
+    """Return application root (directory containing config/ and runs/)."""
+    env_root = os.getenv("PULSE_PROJECT_ROOT")
+    if env_root:
+        return Path(env_root).expanduser().resolve()
+
+    cwd = Path.cwd()
+    if (cwd / "config").is_dir():
+        return cwd
+
+    # Editable install / source checkout: src/pulse/config.py → repo root
+    src_pulse = Path(__file__).resolve().parent
+    candidate = src_pulse.parent.parent
+    if (candidate / "config").is_dir():
+        return candidate
+
+    return candidate
 
 
 def resolve_config_dir(config_dir: Path | None = None) -> Path:
