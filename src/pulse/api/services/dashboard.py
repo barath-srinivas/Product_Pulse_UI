@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pulse.config import AppConfig, current_iso_week, load_config, normalize_iso_week
+from pulse.config import AppConfig, current_iso_week, get_project_root, load_config, normalize_iso_week
 from pulse.ledger.store import LedgerStore, report_artifact_path
 from pulse.pipeline.analytics import enrich_report
 from pulse.pipeline.models import PulseReport
