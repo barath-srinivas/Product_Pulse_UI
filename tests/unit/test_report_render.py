@@ -51,6 +51,16 @@ def test_render_doc_structure(sample_report: PulseReport) -> None:
     assert "product and support teams" in content.lower()
 
 
+def test_render_doc_section_spacing(sample_report: PulseReport) -> None:
+    doc = render_doc_report(
+        sample_report,
+        display_name="Groww",
+        document_id="test-doc-id",
+    )
+    assert doc.content.startswith("\n\nGroww — Weekly Review Pulse")
+    assert doc.content.endswith("\n\n")
+
+
 def test_render_doc_matches_fixture(sample_report: PulseReport) -> None:
     doc = render_doc_report(
         sample_report,

@@ -21,6 +21,8 @@ llm:
   temperature: 0.2
   max_tokens_per_request: 4096
   max_tokens_per_run: 20000
+  min_seconds_between_requests: 8
+  rate_limit_max_retries: 12
   rate_limits:
     requests_per_minute: 30
     requests_per_day: 1000

@@ -4,7 +4,9 @@ This document describes the technical architecture for an automated **weekly rev
 
 **Related documents:** [`context.md`](context.md) · [`implementation-plan.md`](implementation-plan.md) · [`edge-case.md`](edge-case.md) · [`problemStatement.txt`](problemStatement.txt)
 
-**Current build scope:** Groww · Google Play only · plain-text Doc append + Gmail draft via hosted REST API (`https://web-production-facdf.up.railway.app`).
+**Current build scope:** Groww · Google Play · plain-text Doc append + Gmail draft via hosted REST API · **React dashboard (Vercel) + FastAPI (`pulse-api` on Railway)**.
+
+**UI guide:** [`ui.md`](ui.md)
 
 ---
 
@@ -19,6 +21,8 @@ This document describes the technical architecture for an automated **weekly rev
 | **Reviews are data** | Scrub PII; treat review bodies as untrusted input (prompt-injection safe prompts). |
 | **Modular monolith first** | Clear package boundaries inside one repo; multi-product later without rewriting delivery. |
 | **Auditable by default** | Every run writes a ledger row with ingest stats, delivery ids, and timing. |
+| **UI reads, API orchestrates** | Dashboard reads `report.json` artifacts; operator UI triggers the same orchestrator as CLI — no duplicate pipeline logic. |
+| **Split deployment** | Vercel hosts static React; Railway hosts long-running `pulse-api` (not Vercel serverless). |
 
 ---
 
@@ -34,13 +38,18 @@ flowchart TB
     GMAIL[Gmail API]
   end
 
-  subgraph repo [Product Review Pulse repository]
+  subgraph vercel [Vercel]
+    UI[React dashboard + operator UI]
+  end
+
+  subgraph repo [Product Review Pulse — Railway pulse-api]
+    API[FastAPI pulse.api]
     CLI[Pulse CLI / scheduler]
     AGENT[Pulse orchestrator]
     ING[Play Store ingestion]
     REASON[Clustering + Groq LLM]
     RENDER[Report + email renderer]
-    LEDGER[(Run ledger)]
+    LEDGER[(Run ledger + report.json)]
     DELIVERY[delivery/google_mcp_client.py]
   end
 
@@ -52,29 +61,34 @@ flowchart TB
     PROD[Product]
     SUP[Support]
     LEAD[Leadership]
+    OPS[Operators]
   end
 
   GP --> ING
   REASON --> GROQ
   REASON --> BGE
   CLI --> AGENT
+  UI -->|HTTPS VITE_API_URL| API
+  API --> AGENT
+  API --> LEDGER
   AGENT --> ING --> REASON --> RENDER
   RENDER --> DELIVERY
+  RENDER --> LEDGER
   DELIVERY -->|HTTPS + X-API-Key| GAPI
   GAPI --> GDOC
   GAPI --> GMAIL
   AGENT --> LEDGER
+  UI --> PROD
+  UI --> SUP
+  UI --> LEAD
+  UI --> OPS
   GDOC --> PROD
-  GDOC --> SUP
-  GDOC --> LEAD
   GMAIL --> PROD
-  GMAIL --> SUP
-  GMAIL --> LEAD
 ```
 
-**In scope:** Weekly pulse for Groww (`com.nextbillion.groww`), 8–12 week rolling review window, Docs append + Gmail notify/draft.
+**In scope:** Weekly pulse for Groww (`com.nextbillion.groww`), 8–12 week rolling review window, Docs append + Gmail notify/draft, web dashboard and operator console.
 
-**Out of scope (current phase):** App Store ingestion, additional products, BI dashboards, social sources, direct Google API calls from the pulse agent.
+**Out of scope (current phase):** App Store ingestion, additional products, generic third-party BI platforms, social sources, direct Google API calls from the pulse agent.
 
 ---
 
@@ -103,18 +117,29 @@ Product_Review_Pulse/
 │       ├── render/
 │       │   ├── report.py      # DocStructuredReport (plain `content`)
 │       │   └── email.py       # Teaser HTML + plain text
+│       ├── api/               # Phase 10–12: FastAPI dashboard + operator
+│       │   ├── main.py
+│       │   ├── routes/        # dashboard.py, runs.py
+│       │   ├── schemas.py
+│       │   └── services/      # analytics, dashboard, run_executor
 │       ├── delivery/
 │       │   └── google_mcp_client.py  # HTTP client → Railway delivery API
 │       └── ledger/
-│           ├── store.py       # SQLite or JSON ledger
+│           ├── store.py       # SQLite ledger
 │           └── models.py      # RunRecord
+├── ui/                        # Phase 11: React + Vite (Vercel)
+│   ├── vite.config.ts
+│   ├── vercel.json
+│   └── src/
 ├── mcp-servers/
 │   └── README.md              # Pointer to hosted google-mcp-server + config
 ├── data/                      # Gitignored: raw reviews, embeddings cache
-├── runs/                      # Gitignored: run artifacts, ledger DB
+├── runs/                      # Gitignored: ledger.db, {product}/{week}/report.json
+├── railway.toml               # pulse-api start command
 └── docs/
     ├── context.md
     ├── architecture.md
+    ├── ui.md
     └── problemStatement.txt
 ```
 
@@ -181,6 +206,8 @@ flowchart TB
 | **Delivery client** | `src/pulse/delivery/google_mcp_client.py` | HTTPS client to hosted Google delivery API on Railway. |
 | **Run ledger** | `src/pulse/ledger/` | Persistent idempotency + audit trail (required — hosted API does not dedupe). |
 | **Hosted Google delivery API** | Railway (`web-production-facdf.up.railway.app`) | FastAPI: `append_to_doc`, `create_email_draft`; OAuth on server only. |
+| **Dashboard API** | `src/pulse/api/` | FastAPI: read `report.json`, aggregate trends; `POST /api/runs` for operator. |
+| **Web UI** | `ui/` | React + Vite + Recharts; Vercel static deploy; `VITE_API_URL` → Railway. |
 
 ---
 
@@ -270,8 +297,10 @@ See [`mcp-servers/README.md`](../mcp-servers/README.md) for endpoint payloads an
 | `GROQ_API_KEY` | 2 | Pulse agent — Groq summarization (`llama-3.3-70b-versatile`) |
 | `GOOGLE_MCP_BASE_URL` | 4 | Pulse agent — optional override of `baseUrl` in config |
 | `GOOGLE_MCP_API_KEY` | 4 | Pulse agent — `X-API-Key` on every delivery HTTP request |
+| `CORS_ORIGINS` | 12 | `pulse-api` — comma-separated Vercel + localhost origins |
+| `VITE_API_URL` | 11 | Vercel build — Railway `pulse-api` base URL (no trailing slash) |
 
-Google OAuth credentials and refresh tokens live **only on Railway** (`GOOGLE_CREDENTIALS_JSON`, `GOOGLE_TOKEN_JSON` in the hosted `google-mcp-server` project). The pulse agent never reads them.
+Google OAuth credentials and refresh tokens live **only on Railway** (`GOOGLE_CREDENTIALS_JSON`, `GOOGLE_TOKEN_JSON` in the hosted `google-mcp-server` project). The pulse agent never reads them. The Vercel-hosted React app holds **no** API secrets — only the public Railway URL.
 
 ---
 
@@ -314,6 +343,14 @@ class ThemeInsight:
     quotes: list[ValidatedQuote]
     action_ideas: list[str]
     rank: int
+    review_count: int = 0
+    review_share_pct: float = 0.0
+
+@dataclass
+class SentimentSummary:
+    positive_pct: float   # rating >= 4
+    negative_pct: float   # rating <= 2
+    neutral_pct: float
 
 @dataclass
 class ValidatedQuote:
@@ -334,7 +371,11 @@ class PulseReport:
     review_count: int
     themes: list[ThemeInsight]
     audience_blurb: str         # "who this helps"
+    avg_rating: float | None = None
+    sentiment: SentimentSummary | None = None
 ```
+
+**Dashboard source:** `runs/{product_id}/{iso_week}/report.json` (written by orchestrator after reasoning). The API layer enriches legacy reports missing analytics fields via `pipeline/analytics.py`.
 
 ### 6.4 Run ledger record
 
@@ -810,7 +851,71 @@ flowchart TB
 
 ---
 
-## 16. Extension points (deferred)
+## 16. Dashboard API & web UI (Phases 10–12)
+
+### 16.1 Request flow
+
+```mermaid
+sequenceDiagram
+  participant B as Browser (Vercel)
+  participant A as pulse-api (Railway)
+  participant O as Orchestrator
+  participant L as runs/ ledger + report.json
+  participant M as Google MCP API
+
+  B->>A: GET /api/dashboard/overview?week=2026-W24
+  A->>L: load report.json
+  A-->>B: JSON overview
+
+  B->>A: POST /api/runs { dry_run, mock_llm }
+  A->>O: background thread → orchestrator.run()
+  O->>M: append + draft (unless dry_run)
+  O->>L: ledger + report.json
+  B->>A: GET /api/runs/jobs/{id} (poll)
+  A-->>B: pipeline_steps + status
+```
+
+### 16.2 Dashboard endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/dashboard/overview` | Review count, themes, avg rating |
+| GET | `/api/dashboard/themes` | Top themes with `review_share_pct` |
+| GET | `/api/dashboard/trends` | Multi-week theme frequency |
+| GET | `/api/dashboard/customer-voice` | Sentiment %, bar chart data, emerging issues |
+| GET | `/api/dashboard/weeks` | Available ISO weeks from ledger / artifacts |
+| POST | `/api/dashboard/seed-demo` | Dev: copy fixture weeks into `runs/` |
+| POST | `/api/runs` | Operator: trigger pulse run |
+| GET | `/api/runs/jobs/{job_id}` | Live pipeline status |
+| GET | `/api/runs` | Recent runs from ledger |
+
+### 16.3 Vite / Vercel configuration
+
+| Concern | Implementation |
+|---------|----------------|
+| Local dev | `npm run dev` on port 5173; Vite proxies `/api` → `127.0.0.1:8000` |
+| Production | `VITE_API_URL` set on Vercel; `ui/src/lib/api.ts` prefixes all requests |
+| SPA routing | `ui/vercel.json` rewrites to `index.html` |
+| Build | `npm run build` → `ui/dist/` |
+
+See [`ui.md`](ui.md) for step-by-step deploy instructions.
+
+### 16.4 Pipeline steps (agent console UI)
+
+| UI step | Ledger `status` mapping |
+|---------|-------------------------|
+| Reviews Retrieved | `ingesting` |
+| Reviews Clustered | `reasoning` (early) |
+| Themes Generated | `reasoning` |
+| Quotes Validated | `reasoning` (late) |
+| Report Created | `delivering` |
+| Email Delivered | `completed` |
+
+Finer sub-step callbacks in the orchestrator are deferred (see implementation plan §21).
+
+---
+
+## 17. Extension points (deferred)
 
 | Extension | Touch points |
 |-----------|--------------|
@@ -823,7 +928,7 @@ Design rule: orchestrator depends on **interfaces** (`ReviewSource`, `DeliveryGa
 
 ---
 
-## 17. Implementation phases
+## 18. Implementation phases
 
 See [`implementation-plan.md`](implementation-plan.md) for full task breakdown. Summary:
 
@@ -838,11 +943,14 @@ See [`implementation-plan.md`](implementation-plan.md) for full task breakdown. 
 | **6** | Orchestrator + SQLite ledger | Full wired pipeline |
 | **7** | CLI (`run`, `dry-run`, `backfill`, `status`) | Operator commands |
 | **8** | Staging E2E + runbook | Stakeholder sign-off |
-| **9** | Production Doc + scheduler + send | Monday IST live pulse |
+| **9** | Production Doc + scheduler + draft go-live | Monday IST live pulse |
+| **10** | Dashboard API + analytics | FastAPI read endpoints; `PulseReport` enrichment |
+| **11** | React dashboard (Vercel) | Overview, themes, trends, customer voice |
+| **12** | Operator console + Railway deploy | Manual run UI; Vercel + Railway; backfill |
 
 ---
 
-## 18. Open decisions
+## 19. Open decisions
 
 | Topic | Options | Recommendation |
 |-------|---------|----------------|
@@ -852,10 +960,12 @@ See [`implementation-plan.md`](implementation-plan.md) for full task breakdown. 
 | Ledger store | SQLite vs JSON file | SQLite for queryability |
 | Heading anchor in Doc | Anchor marker in plain `content` + ledger | `[anchor:groww-YYYY-Www]` in appended text |
 | Production email send | Extend hosted server vs manual draft send | **Draft-only** via API until send endpoint exists |
+| Dashboard hosting | Vercel + Railway vs monolith | **Vercel (UI) + Railway (API)** — decided |
+| Dashboard auth | Public vs API-key gated | **Public** for v1; auth deferred |
 
 ---
 
-## 19. Glossary
+## 20. Glossary
 
 | Term | Definition |
 |------|------------|
@@ -864,3 +974,5 @@ See [`implementation-plan.md`](implementation-plan.md) for full task breakdown. 
 | **Section anchor** | Stable `groww-2026-W23` identifier for Doc section |
 | **MCP** | Hosted Google delivery REST API on Railway — Docs append + Gmail draft |
 | **Run ledger** | Append-only record of run outcomes and delivery ids |
+| **pulse-api** | FastAPI app (`pulse.api.main`) — dashboard JSON + operator run trigger |
+| **Vite** | Frontend build tool for `ui/` — dev proxy and Vercel production bundle |

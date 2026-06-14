@@ -1,0 +1,19 @@
+{
+  "product_id": "groww",
+  "iso_week": "2026-W20",
+  "period_label": "Last 10 weeks (Google Play)",
+  "generated_at": "2026-05-11T08:00:00+05:30",
+  "review_count": 980,
+  "avg_rating": 3.9,
+  "sentiment": { "positive_pct": 68.0, "negative_pct": 22.0, "neutral_pct": 10.0 },
+  "themes": [
+    { "cluster_id": 0, "theme_name": "App Performance Issues", "theme_summary": "Performance.", "quotes": [{ "text": "Lag.", "review_id": "a", "validation": "exact" }], "action_ideas": ["Scale"], "rank": 1, "review_count": 265, "review_share_pct": 27.0 },
+    { "cluster_id": 1, "theme_name": "Customer Support Delays", "theme_summary": "Support.", "quotes": [{ "text": "Ticket.", "review_id": "b", "validation": "exact" }], "action_ideas": ["Staff"], "rank": 2, "review_count": 206, "review_share_pct": 21.0 },
+    { "cluster_id": 2, "theme_name": "Missing Analytics Features", "theme_summary": "Analytics.", "quotes": [{ "text": "Tools.", "review_id": "c", "validation": "exact" }], "action_ideas": ["Roadmap"], "rank": 3, "review_count": 176, "review_share_pct": 18.0 },
+    { "cluster_id": 3, "theme_name": "Login Issues", "theme_summary": "Login.", "quotes": [{ "text": "Session.", "review_id": "d", "validation": "exact" }], "action_ideas": ["Auth"], "rank": 4, "review_count": 59, "review_share_pct": 6.0 },
+    { "cluster_id": 4, "theme_name": "App Crashes", "theme_summary": "Crashes.", "quotes": [{ "text": "Freeze.", "review_id": "e", "validation": "exact" }], "action_ideas": ["QA"], "rank": 5, "review_count": 98, "review_share_pct": 10.0 }
+  ],
+  "audience_blurb": "Weekly Groww pulse.",
+  "llm_provider": "groq",
+  "llm_model": "llama-3.3-70b-versatile"
+}

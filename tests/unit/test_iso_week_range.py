@@ -2,7 +2,7 @@
 
 import pytest
 
-from pulse.config import iso_week_range, parse_iso_week
+from pulse.config import iso_week_range, normalize_iso_week, parse_iso_week
 
 
 def test_iso_week_range_single_week() -> None:
@@ -21,3 +21,8 @@ def test_iso_week_range_rejects_inverted_range() -> None:
 
 def test_parse_iso_week_valid() -> None:
     assert parse_iso_week("2026-W24") == (2026, 24)
+
+
+def test_normalize_iso_week_accepts_lowercase_w() -> None:
+    assert normalize_iso_week("2026-w23") == "2026-W23"
+    assert normalize_iso_week(" 2026-W23 ") == "2026-W23"

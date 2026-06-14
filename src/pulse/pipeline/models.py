@@ -30,6 +30,12 @@ class ValidatedQuote(BaseModel):
     validation: Literal["exact", "normalized"]
 
 
+class SentimentSummary(BaseModel):
+    positive_pct: float = Field(ge=0, le=100)
+    negative_pct: float = Field(ge=0, le=100)
+    neutral_pct: float = Field(ge=0, le=100)
+
+
 class ThemeInsight(BaseModel):
     cluster_id: int
     theme_name: str
@@ -37,6 +43,8 @@ class ThemeInsight(BaseModel):
     quotes: list[ValidatedQuote]
     action_ideas: list[str]
     rank: int
+    review_count: int = 0
+    review_share_pct: float = Field(default=0.0, ge=0, le=100)
 
 
 class PulseReport(BaseModel):
@@ -49,6 +57,8 @@ class PulseReport(BaseModel):
     audience_blurb: str
     llm_provider: str = "groq"
     llm_model: str = ""
+    avg_rating: float | None = None
+    sentiment: SentimentSummary | None = None
 
 
 class LlmQuoteCandidate(BaseModel):

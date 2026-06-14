@@ -8,11 +8,18 @@ Automated weekly insight report from **Google Play** reviews for **Groww**, deli
 
 Phases 1–8 complete. Production uses the real Google Doc and stakeholder list with `delivery.email_mode: draft` until the hosted Railway API supports send.
 
+## Web UI (dashboard + operator)
+
+- [`docs/ui.md`](docs/ui.md) — Vite + React on Vercel, FastAPI on Railway
+- [`docs/deploymentplan.md`](docs/deploymentplan.md) — step-by-step Railway + Vercel deploy
+- Local: `pulse-api` + `cd ui && npm run dev`
+
 ## Documentation
 
 - [`docs/context.md`](docs/context.md) — product scope
 - [`docs/architecture.md`](docs/architecture.md) — technical design
 - [`docs/implementation-plan.md`](docs/implementation-plan.md) — phased build plan
+- [`docs/deploymentplan.md`](docs/deploymentplan.md) — Railway + Vercel deployment
 - [`docs/runbook.md`](docs/runbook.md) — operations, staging sign-off, audit SQL
 - [`docs/scheduler.md`](docs/scheduler.md) — Monday 08:00 IST cron / Task Scheduler
 - [`docs/edge-case.md`](docs/edge-case.md) — corner cases and QA catalog

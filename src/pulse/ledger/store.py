@@ -97,6 +97,52 @@ class LedgerStore:
             ).fetchone()
         return _row_to_record(row) if row else None
 
+    def get_run_by_id(self, run_id: str) -> RunRecord | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+        return _row_to_record(row) if row else None
+
+    def list_runs(
+        self,
+        *,
+        product_id: str | None = None,
+        limit: int = 50,
+    ) -> list[RunRecord]:
+        with self._connect() as conn:
+            if product_id:
+                rows = conn.execute(
+                    """
+                    SELECT * FROM runs
+                    WHERE product_id = ?
+                    ORDER BY started_at DESC
+                    LIMIT ?
+                    """,
+                    (product_id, limit),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT * FROM runs
+                    ORDER BY started_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,),
+                ).fetchall()
+        return [_row_to_record(row) for row in rows]
+
+    def list_completed_weeks(self, product_id: str, *, limit: int = 52) -> list[str]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT DISTINCT iso_week FROM runs
+                WHERE product_id = ? AND status = 'completed'
+                ORDER BY iso_week DESC
+                LIMIT ?
+                """,
+                (product_id, limit),
+            ).fetchall()
+        return [row["iso_week"] for row in rows]
+
     def create_run(
         self,
         *,

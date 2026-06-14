@@ -73,6 +73,8 @@ class LlmConfig(BaseModel):
     temperature: float = 0.2
     max_tokens_per_request: int = 4096
     max_tokens_per_run: int = 20000
+    min_seconds_between_requests: float = 6.0
+    rate_limit_max_retries: int = 10
     rate_limits: LlmRateLimitsConfig = Field(default_factory=LlmRateLimitsConfig)
 
 
@@ -279,9 +281,24 @@ def iso_week_range(start: str, end: str) -> list[str]:
 
 def parse_iso_week(iso_week: str) -> tuple[int, int]:
     """Parse YYYY-Www into (iso_year, iso_week_number)."""
-    if len(iso_week) < 8 or "-W" not in iso_week:
+    year, week = _parse_iso_week_parts(iso_week)
+    return year, week
+
+
+def normalize_iso_week(iso_week: str) -> str:
+    """Return canonical YYYY-Www label (accepts lowercase w from manual input)."""
+    year, week = _parse_iso_week_parts(iso_week)
+    return format_iso_week(year, week)
+
+
+def _parse_iso_week_parts(iso_week: str) -> tuple[int, int]:
+    cleaned = iso_week.strip()
+    if len(cleaned) < 8 or "-" not in cleaned:
         raise ValueError(f"invalid ISO week format: {iso_week!r}; expected YYYY-Www")
-    year_str, week_str = iso_week.split("-W", maxsplit=1)
+    year_str, week_part = cleaned.split("-", maxsplit=1)
+    if not week_part or week_part[0] not in {"W", "w"}:
+        raise ValueError(f"invalid ISO week format: {iso_week!r}; expected YYYY-Www")
+    week_str = week_part[1:]
     try:
         year = int(year_str)
         week = int(week_str)

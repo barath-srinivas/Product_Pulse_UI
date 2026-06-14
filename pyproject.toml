@@ -20,11 +20,16 @@ dependencies = [
 
 [project.scripts]
 pulse = "pulse.cli:main"
+pulse-api = "pulse.api.main:main"
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",
+]
+ui = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
 ]
 
 [build-system]

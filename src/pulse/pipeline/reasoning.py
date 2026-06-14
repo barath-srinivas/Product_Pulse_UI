@@ -12,6 +12,11 @@ from pulse.pipeline.cluster import cluster_reviews
 from pulse.pipeline.embed import embed_reviews
 from pulse.pipeline.exceptions import ClusteringError, EmptyCorpusError, PipelineError
 from pulse.pipeline.llm_budget import LlmBudgetTracker
+from pulse.pipeline.analytics import (
+    attach_theme_shares,
+    compute_avg_rating,
+    compute_sentiment,
+)
 from pulse.pipeline.models import PulseReport, ReasoningResult, ThemeInsight
 from pulse.pipeline.scrub import scrub_reviews
 from pulse.pipeline.summarize import build_summarizer
@@ -49,16 +54,28 @@ def run_reasoning_pipeline(
 
     corpus = {r.review_id: r for r in scrubbed}
     budget = LlmBudgetTracker(config=config.llm)
+    daily_used = budget._load_daily_tokens()
+    daily_cap = config.llm.rate_limits.tokens_per_day
+    if daily_used >= daily_cap * 0.85:
+        logger.warning(
+            "Groq daily token usage high (%s / %s); rate limits likely until quota resets",
+            daily_used,
+            daily_cap,
+        )
     summarizer = build_summarizer(config.llm, budget, mock=mock_llm)
 
+    total_reviews = len(scrubbed)
     themes: list[ThemeInsight] = []
     for rank, cluster in enumerate(clusters, start=1):
+        share_pct = round(cluster.size / total_reviews * 100, 1) if total_reviews else 0.0
         insight = _summarize_cluster_with_retry(
             summarizer=summarizer,
             cluster=cluster,
             rank=rank,
             corpus=corpus,
             config=config,
+            review_count=cluster.size,
+            review_share_pct=share_pct,
         )
         if insight is not None:
             themes.append(insight)
@@ -66,6 +83,7 @@ def run_reasoning_pipeline(
     if not themes:
         raise PipelineError("no valid themes after Groq summarization and quote validation")
 
+    themes = attach_theme_shares(themes, total_reviews)
     theme_names = [t.theme_name for t in themes]
     audience_blurb = summarizer.summarize_audience(theme_names)
 
@@ -75,11 +93,13 @@ def run_reasoning_pipeline(
         iso_week=iso_week,
         period_label=f"Last {config.review_window_weeks} weeks (Google Play)",
         generated_at=datetime.now(timezone),
-        review_count=len(scrubbed),
+        review_count=total_reviews,
         themes=themes,
         audience_blurb=audience_blurb,
         llm_provider=config.llm.provider,
         llm_model=config.llm.model,
+        avg_rating=compute_avg_rating(scrubbed),
+        sentiment=compute_sentiment(scrubbed),
     )
 
     return ReasoningResult(
@@ -98,6 +118,8 @@ def _summarize_cluster_with_retry(
     rank: int,
     corpus: dict,
     config: PulseConfig,
+    review_count: int,
+    review_share_pct: float,
 ) -> ThemeInsight | None:
     response = summarizer.summarize_cluster(cluster)
     insight = build_theme_insight(
@@ -106,6 +128,8 @@ def _summarize_cluster_with_retry(
         response=response,
         corpus=corpus,
         safety=config.safety,
+        review_count=review_count,
+        review_share_pct=review_share_pct,
     )
     if insight is not None:
         return insight
@@ -122,6 +146,8 @@ def _summarize_cluster_with_retry(
             response=response,
             corpus=corpus,
             safety=config.safety,
+            review_count=review_count,
+            review_share_pct=review_share_pct,
         )
         if insight is not None:
             return insight

@@ -15,6 +15,11 @@ def _anchor_marker(anchor: str) -> str:
     return f"[anchor:{anchor}]"
 
 
+# Append-only Docs API: prefix/suffix spacing so weekly sections do not run together.
+SECTION_LEAD_SPACING = "\n\n"
+SECTION_TRAIL_SPACING = "\n\n"
+
+
 def _theme_bullet(rank: int, theme_name: str, theme_summary: str) -> str:
     return f"{rank}. {theme_name} — {theme_summary}"
 
@@ -67,7 +72,8 @@ def _render_section_content(
         lines.append(f"• {idea}")
 
     lines.extend(["", "Who this helps", report.audience_blurb])
-    return "\n".join(lines)
+    body = "\n".join(lines)
+    return f"{SECTION_LEAD_SPACING}{body}{SECTION_TRAIL_SPACING}"
 
 
 def render_doc_report(

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pulse.config import AppConfig, current_iso_week, load_config
+from pulse.config import AppConfig, current_iso_week, load_config, normalize_iso_week
 from pulse.delivery.google_mcp_client import DeliveryError, DraftResult, GoogleMcpClient
 from pulse.ingest.models import IngestResult, Review
 from pulse.ingest.play_store import ingest_groww_reviews
@@ -112,11 +112,14 @@ class PulseOrchestrator:
         *,
         iso_week: str | None = None,
         force: bool = False,
+        force_delivery: bool = False,
         from_stage: PipelineStage = "ingest",
         mock_llm: bool = False,
         dry_run: bool = False,
     ) -> OrchestratorResult:
-        resolved_week = iso_week or current_iso_week(self.config.pulse.timezone)
+        resolved_week = (
+            normalize_iso_week(iso_week) if iso_week else current_iso_week(self.config.pulse.timezone)
+        )
         product = self.config.get_product(product_id)
         anchor = section_anchor(product_id, resolved_week)
 
@@ -179,6 +182,7 @@ class PulseOrchestrator:
                     doc_report=doc_report,
                     email_payload=email_payload,
                     idempotency_source=idempotency_source,
+                    force_delivery=force_delivery,
                 )
 
             run = self.ledger.set_status(run, "completed", timezone=self.config.pulse.timezone)
@@ -365,6 +369,7 @@ class PulseOrchestrator:
         doc_report: DocStructuredReport,
         email_payload: EmailPayload,
         idempotency_source: RunRecord | None,
+        force_delivery: bool = False,
     ) -> None:
         run = self.ledger.set_status(run, "delivering", timezone=self.config.pulse.timezone)
         client = self.delivery_client or GoogleMcpClient.from_config()
@@ -374,7 +379,7 @@ class PulseOrchestrator:
             raise OrchestratorError("delivery API health check failed")
 
         delivery_state = idempotency_source or run
-        if delivery_state.doc_delivered():
+        if not force_delivery and delivery_state.doc_delivered():
             _log_event(
                 "delivery_skipped",
                 step="append_to_doc",
@@ -401,11 +406,15 @@ class PulseOrchestrator:
         if not recipients:
             raise OrchestratorError("no email recipients configured in stakeholders.to")
 
-        existing_drafts = list(delivery_state.gmail_drafts)
+        existing_drafts = [] if force_delivery else list(delivery_state.gmail_drafts)
         drafted_to = {draft.to for draft in existing_drafts}
         pending_recipients = [addr for addr in recipients if addr not in drafted_to]
 
-        if not pending_recipients and delivery_state.email_delivered(len(recipients)):
+        if (
+            not force_delivery
+            and not pending_recipients
+            and delivery_state.email_delivered(len(recipients))
+        ):
             _log_event("delivery_skipped", step="create_email_draft", run_id=run.run_id)
             _apply_drafts_to_record(run, existing_drafts)
         else:
@@ -461,7 +470,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Recompute insights; delivery stays idempotent",
+        help="Recompute insights; delivery stays idempotent unless --force-delivery",
+    )
+    parser.add_argument(
+        "--force-delivery",
+        action="store_true",
+        help="Re-append Doc section and create new Gmail drafts even if ledger shows delivered",
     )
     parser.add_argument(
         "--from-stage",
@@ -483,6 +497,7 @@ def main(argv: list[str] | None = None) -> int:
             args.product,
             iso_week=args.week,
             force=args.force,
+            force_delivery=args.force_delivery,
             from_stage=args.from_stage,  # type: ignore[arg-type]
             mock_llm=args.mock_llm,
         )

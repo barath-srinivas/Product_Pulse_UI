@@ -7,7 +7,8 @@ Build an automated **weekly “pulse”** that turns **public Google Play review
 Core principle: **repeatable customer-voice snapshots** — themes, verbatim quotes, and action ideas — without manual copy-paste, spreadsheets, or duplicate delivery artifacts.
 
 **Source of truth for product intent:** [`problemStatement.txt`](problemStatement.txt)  
-**Current build scope:** Groww + Google Play only (see [Scope constraints](#scope-constraints-current-build)).
+**Current build scope:** Groww + Google Play + **web dashboard & operator UI** (see [Scope constraints](#scope-constraints-current-build)).  
+**UI guide:** [`ui.md`](ui.md)
 
 ---
 
@@ -30,6 +31,7 @@ Give product, support, and leadership teams a **repeatable, weekly snapshot** of
 | **Product** | Prioritize roadmap from recurring themes |
 | **Support** | Spot repeating complaints and quality issues |
 | **Leadership** | Fast health snapshot tied to customer voice |
+| **Operators** | Manual pulse runs and run history via web console (in addition to CLI) |
 
 ---
 
@@ -42,6 +44,7 @@ The **first implementation** is intentionally narrow:
 | **Product** | **Groww only** | INDMoney, PowerUp Money, Wealth Monitor, Kuvera |
 | **Review source** | **Google Play only** | Apple App Store (iTunes RSS) |
 | **Delivery** | **Hosted Google API on Railway** (`web-production-facdf.up.railway.app`) | In-repo stdio MCP servers |
+| **Web UI** | **React dashboard on Vercel** + **FastAPI on Railway** (`pulse-api`) | Generic BI tools; real-time streaming analytics |
 
 The architecture should still allow adding more products and App Store ingestion later, but **do not implement them in the current phase**.
 
@@ -114,6 +117,28 @@ Google Docs and Gmail integration is provided by **`google-mcp-server`** — a F
 - Google OAuth credentials and tokens live on **Railway** (`GOOGLE_CREDENTIALS_JSON`, `GOOGLE_TOKEN_JSON`) — not in the pulse agent repo.
 - The pulse agent calls the hosted API over HTTPS; no stdio MCP spawn in this repository.
 
+### 7. Web dashboard & operator UI (Phases 10–12)
+
+A **read-focused dashboard** and **operator console** complement the CLI and Monday scheduler. The Google Doc remains the canonical archive; the web UI surfaces aggregated insights from `PulseReport` artifacts.
+
+| Surface | Host | Audience |
+|---------|------|----------|
+| **Dashboard** | Vercel (`ui/`) | Product, support, leadership — weekly pulse at a glance |
+| **Operator console** | Same app, `/operator` | Ops — manual `pulse run`, live pipeline status |
+| **Dashboard API** | Railway (`pulse-api`) | Backend only — not called by stakeholders directly |
+
+**Dashboard views:**
+
+1. **Overview** — week, reviews analyzed, themes found, avg rating  
+2. **Top themes** — ranked themes with % of reviews  
+3. **Trend chart** — theme frequency over multiple ISO weeks  
+4. **Customer voice** — sentiment split, top-5 bar chart, emerging issues (week-over-week)  
+5. **AI agent console** — pipeline step visualization (live during operator runs)
+
+**Deployment split:** Vercel serves the React build; Railway runs `pulse-api` (same repo as the pulse pipeline). The UI never holds Google OAuth or Groq keys — only the Railway API does.
+
+See [`ui.md`](ui.md) for Vite configuration, `VITE_API_URL`, and CORS setup.
+
 ---
 
 ## Module Boundaries
@@ -127,6 +152,8 @@ Keep internal code modular along these lines:
 | Output generation | Report + email rendering (structured for Docs; HTML/text for Gmail) |
 | Human-visible delivery | **Hosted Google delivery API** → `google_mcp_client.py` |
 | Delivery server ops | Railway-hosted `google-mcp-server` (see `mcp-servers/README.md`) |
+| Dashboard API | `src/pulse/api/` — read `report.json` + ledger; trigger runs |
+| Web UI | `ui/` — React + Vite; calls API via `VITE_API_URL` |
 
 ---
 
@@ -141,6 +168,7 @@ Keep internal code modular along these lines:
 
 - Designed to run **once per week for Groww** (e.g. scheduled job **Monday morning IST**).
 - Provide a **CLI** for backfill of any ISO week.
+- Provide a **web operator console** for on-demand runs outside the schedule.
 
 ### Idempotent runs
 
@@ -169,7 +197,7 @@ Each run records:
 - Additional products beyond **Groww** in the current build.
 - **App Store** review ingestion in the current build.
 - A generic Google Workspace product beyond pulse needs (Docs append + Gmail send/draft).
-- Real-time streaming analytics or a BI dashboard (the running Google Doc is the living artifact).
+- Real-time streaming analytics or a generic third-party BI platform (the Google Doc + pulse dashboard are the living artifacts).
 - Social sources (Twitter, Reddit, etc.) in initial scope.
 - Storing Google OAuth secrets in the pulse agent codebase.
 - Building stdio MCP servers inside this repo (delivery uses hosted Railway API).
@@ -231,26 +259,37 @@ flowchart LR
     DOC[append_to_doc]
     MAIL[create_email_draft]
   end
+  subgraph ui [Web UI - Vercel + Railway API]
+    WEB[React dashboard]
+    API[pulse-api FastAPI]
+  end
   GP --> EMB
   EMB --> CLU --> LLM --> VAL --> RPT
   RPT --> DOC
   RPT --> EM --> MAIL
+  RPT --> API
+  WEB --> API
 ```
 
 ---
 
 ## Project Status
 
-**Greenfield** — implementation follows phased plan: pulse agent, hosted delivery integration, Play Store ingestion.
+**Phases 0–11 complete** · **Phase 12 in progress** (Vercel + Railway production deploy for UI).
 
-### Planned companion docs & layout
+Pipeline (ingest → reason → deliver), CLI, scheduler, and web dashboard are implemented. Remaining Phase 12 work: production Vercel/Railway deploy with persistent `runs/` volume.
+
+### Companion docs & layout
 
 | Path | Purpose |
 |------|---------|
-| `docs/architecture.md` | Delivery API contracts, idempotency anchors, run ledger schema |
-| `docs/implementation-plan.md` | Phased build plan, CLI, scheduler, staging vs production email |
+| `docs/architecture.md` | Delivery API contracts, ledger schema, UI layer |
+| `docs/implementation-plan.md` | Phased build plan (Phases 0–12) |
+| `docs/ui.md` | Vite, Vercel, Railway, dashboard API |
 | `docs/edge-case.md` | Corner cases, failure modes, QA catalog |
 | `config/products.yaml` | Groww registry (Google Play package) and stakeholder routing |
+| `ui/` | React dashboard + operator console |
+| `src/pulse/api/` | FastAPI dashboard and run trigger |
 | `mcp-servers/README.md` | Hosted Google delivery API (Railway) reference |
 
 ---
@@ -263,3 +302,5 @@ flowchart LR
 | **ISO week** | Week identifier used for scheduling, idempotency, and Doc section labels |
 | **Section anchor** | Stable Doc heading / link target for a given product + week |
 | **MCP / delivery API** | Hosted Google delivery REST API on Railway — Docs append + Gmail draft |
+| **pulse-api** | FastAPI service on Railway — dashboard JSON + operator run trigger |
+| **Vite** | Frontend build tool for `ui/` — dev server and Vercel production build |

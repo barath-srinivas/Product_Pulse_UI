@@ -68,6 +68,8 @@ def build_theme_insight(
     response: LlmThemeResponse,
     corpus: dict[str, ScrubbedReview],
     safety: SafetyConfig,
+    review_count: int = 0,
+    review_share_pct: float = 0.0,
 ) -> ThemeInsight | None:
     quotes = validate_theme(response, corpus, safety)
     if not quotes:
@@ -79,4 +81,6 @@ def build_theme_insight(
         quotes=quotes,
         action_ideas=[a.strip() for a in response.action_ideas if a.strip()][:3],
         rank=rank,
+        review_count=review_count,
+        review_share_pct=review_share_pct,
     )

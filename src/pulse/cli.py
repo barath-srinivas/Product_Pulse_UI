@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from pulse.config import current_iso_week, iso_week_range, load_config, parse_iso_week
+from pulse.config import current_iso_week, iso_week_range, load_config, normalize_iso_week, parse_iso_week
 from pulse.ledger.store import LedgerStore
 from pulse.orchestrator import OrchestratorError, PulseOrchestrator
 
@@ -58,10 +58,9 @@ def _validate_iso_week(iso_week: str | None) -> str | None:
     if iso_week is None:
         return None
     try:
-        parse_iso_week(iso_week)
+        return normalize_iso_week(iso_week)
     except ValueError as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
-    return iso_week
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -75,6 +74,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             args.product,
             iso_week=args.week,
             force=args.force,
+            force_delivery=args.force_delivery,
             from_stage=args.from_stage,  # type: ignore[arg-type]
             mock_llm=args.mock_llm,
         )
@@ -139,6 +139,7 @@ def cmd_backfill(args: argparse.Namespace) -> int:
                 args.product,
                 iso_week=week,
                 force=args.force,
+                force_delivery=args.force_delivery,
                 mock_llm=args.mock_llm,
             )
         except OrchestratorError as exc:
@@ -203,6 +204,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--week", help="ISO week YYYY-Www (default: current week IST)")
     run_parser.add_argument("--force", action="store_true", help="Recompute insights")
     run_parser.add_argument(
+        "--force-delivery",
+        action="store_true",
+        help="Re-append Doc and create new drafts even if already delivered",
+    )
+    run_parser.add_argument(
         "--from-stage",
         choices=["ingest", "reason", "render", "delivery"],
         default="ingest",
@@ -239,6 +245,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="End ISO week YYYY-Www (inclusive)",
     )
     backfill_parser.add_argument("--force", action="store_true", help="Recompute insights")
+    backfill_parser.add_argument(
+        "--force-delivery",
+        action="store_true",
+        help="Re-append Doc and create new drafts even if already delivered",
+    )
     backfill_parser.add_argument("--mock-llm", action="store_true", help="Use mock Groq summarizer")
     backfill_parser.add_argument(
         "--stop-on-error",

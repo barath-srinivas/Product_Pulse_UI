@@ -4,7 +4,9 @@ Phase-wise plan to build the automated **weekly review pulse** for **Groww** (Go
 
 **Related documents:** [`context.md`](context.md) · [`architecture.md`](architecture.md) · [`edge-case.md`](edge-case.md) · [`problemStatement.txt`](problemStatement.txt)
 
-**Current build scope:** Groww · `com.nextbillion.groww` · Google Play · Docs append + Gmail teaser.
+**Current build scope:** Groww · `com.nextbillion.groww` · Google Play · Docs append + Gmail teaser · **Web dashboard + operator UI** (Phases 10–12).
+
+**UI operations guide:** [`ui.md`](ui.md)
 
 ---
 
@@ -22,7 +24,7 @@ Deliver an end-to-end weekly pipeline that:
 
 ### 1.2 Phase map
 
-Ten phases (0–9). **Phases 4 and 5** (delivery HTTP client) can start **in parallel after Phase 0** — they only need fixture payloads and Railway credentials, not the full pipeline.
+Thirteen phases (0–12). **Phases 4 and 5** (delivery HTTP client) can start **in parallel after Phase 0**. **Phases 10–11** (dashboard API + React UI) can start **after Phase 6** once `PulseReport` artifacts and the ledger exist.
 
 ```mermaid
 flowchart TB
@@ -36,6 +38,9 @@ flowchart TB
   P7[Phase 7\nCLI]
   P8[Phase 8\nStaging E2E]
   P9[Phase 9\nProduction go-live]
+  P10[Phase 10\nDashboard API]
+  P11[Phase 11\nReact dashboard]
+  P12[Phase 12\nOperator + deploy]
 
   P0 --> P1 --> P2 --> P3
   P0 --> P4
@@ -44,22 +49,27 @@ flowchart TB
   P4 --> P6
   P5 --> P6
   P6 --> P7 --> P8 --> P9
+  P6 --> P10 --> P11 --> P12
+  P9 --> P12
 ```
 
-| Phase | Focus | Primary outcome | Est. effort |
-|-------|-------|-----------------|-------------|
-| **0** | Repo skeleton, config, tooling, CI smoke | Installable project; config loads; CI green | 1–2 days |
-| **1** | Groww Play Store ingestion + `Review` model | Raw JSON + normalized reviews | 2–3 days |
-| **2** | PII scrub → embed → UMAP/HDBSCAN → Groq LLM → quote validation | `PulseReport` JSON | 4–6 days |
-| **3** | Doc plain-text section + email teaser rendering | `doc_section.json` + email payload from report | 2–3 days |
-| **4** | Docs delivery HTTP client | *Parallel after P0* — `append_to_doc` via Railway API | 1–2 days |
-| **5** | Gmail delivery HTTP client | *Parallel after P0* — `create_email_draft` via Railway API | 1–2 days |
-| **6** | Orchestrator + SQLite run ledger | Wired pipeline + idempotent run state | 3–4 days |
-| **7** | CLI: `run`, `dry-run`, `backfill`, `status` | Operator-facing commands | 1–2 days |
-| **8** | Staging E2E, safety audit, runbook | Signed-off staging run | 2–3 days |
-| **9** | Production Doc, scheduler, send-mode go-live | Monday IST automated pulse | 1–2 days |
+| Phase | Focus | Primary outcome | Status |
+|-------|-------|-----------------|--------|
+| **0** | Repo skeleton, config, tooling, CI smoke | Installable project; config loads; CI green | Done |
+| **1** | Groww Play Store ingestion + `Review` model | Raw JSON + normalized reviews | Done |
+| **2** | PII scrub → embed → UMAP/HDBSCAN → Groq LLM → quote validation | `PulseReport` JSON | Done |
+| **3** | Doc plain-text section + email teaser rendering | `doc_section.json` + email payload from report | Done |
+| **4** | Docs delivery HTTP client | `append_to_doc` via Railway API | Done |
+| **5** | Gmail delivery HTTP client | `create_email_draft` via Railway API | Done |
+| **6** | Orchestrator + SQLite run ledger | Wired pipeline + idempotent run state | Done |
+| **7** | CLI: `run`, `dry-run`, `backfill`, `status` | Operator-facing commands | Done |
+| **8** | Staging E2E, safety audit, runbook | Signed-off staging run | Done |
+| **9** | Production Doc, scheduler, draft-mode go-live | Monday IST automated pulse | Done |
+| **10** | Dashboard API + `PulseReport` analytics | FastAPI read endpoints; sentiment / theme % | **Done** |
+| **11** | React dashboard (Vercel) | Overview, themes, trends, customer voice, agent console | **Done** |
+| **12** | Operator console + Railway API deploy | Manual run UI; Vercel + Railway; backfill for trends | In progress |
 
-*Total ~22–32 days for one developer. Phases 4∥5 and 1→2→3 can overlap across people.*
+*Phases 0–9 ~22–32 days. Phases 10–12 ~5–8 days additional.*
 
 ### 1.3 Why this phasing works
 
@@ -83,16 +93,26 @@ Product_Review_Pulse/
 │   ├── pulse.yaml
 │   └── mcp-servers.json
 ├── src/pulse/
+│   ├── api/                    # Phase 10–12 — FastAPI dashboard + operator
+│   │   ├── main.py
+│   │   ├── routes/
+│   │   └── services/
 │   └── delivery/
-│       └── google_mcp_client.py   # Phase 4/5 HTTP client
+│       └── google_mcp_client.py  # Phase 4/5 HTTP client
+├── ui/                         # Phase 11 — React + Vite (Vercel)
+│   ├── vite.config.ts
+│   ├── vercel.json
+│   └── src/
 ├── mcp-servers/
-│   └── README.md                  # Hosted API reference (Railway)
+│   └── README.md               # Hosted API reference (Railway)
 ├── data/                       # gitignored
-├── runs/                       # gitignored (ledger.db)
+├── runs/                       # gitignored (ledger.db, report.json per week)
 ├── tests/
-├── scripts/                    # dev helpers for phases before CLI
+├── scripts/                    # dev helpers; seed_dashboard.py
+├── railway.toml                # Phase 12 — pulse-api on Railway
 ├── .github/workflows/          # CI smoke (Phase 0)
 ├── docs/
+│   └── ui.md                   # Phase 11–12 — Vite/Vercel/Railway guide
 ├── .env.example
 ├── pyproject.toml
 └── README.md
@@ -504,11 +524,118 @@ Point at production Doc, enable `email_mode: send`, schedule weekly Monday IST r
 
 - [ ] `pulse run --product groww` sends to real stakeholders
 - [ ] Scheduler documented and active
-- [ ] Definition of done (§15) satisfied
+- [ ] Definition of done (§18) satisfied
 
 ---
 
-## 14. Environment matrix
+## 14. Phase 10 — Dashboard API + report analytics
+
+**Status: complete**
+
+### 14.1 Objectives
+
+Expose read-only dashboard data from `runs/{product}/{iso_week}/report.json` and the run ledger via **FastAPI**, with analytics fields on `PulseReport` for the web UI.
+
+### 14.2 Tasks
+
+| # | Task | Details |
+|---|------|---------|
+| 10.1 | Analytics on `PulseReport` | `avg_rating`, `sentiment`, `ThemeInsight.review_count` / `review_share_pct` |
+| 10.2 | `pipeline/analytics.py` | Sentiment from star ratings; theme share %; week-over-week deltas |
+| 10.3 | FastAPI app | `src/pulse/api/main.py` — CORS, `/health` |
+| 10.4 | Dashboard routes | `/api/dashboard/overview`, `/themes`, `/trends`, `/customer-voice`, `/weeks` |
+| 10.5 | Run routes | `POST /api/runs`, `GET /api/runs/jobs/{id}`, `GET /api/runs` |
+| 10.6 | `pulse-api` entry point | `pyproject.toml` → `pulse-api = pulse.api.main:main` |
+| 10.7 | Tests | `tests/unit/test_analytics.py` |
+
+### 14.3 Deliverables
+
+- `pip install -e ".[ui]"` and `pulse-api` serves dashboard JSON
+- Multi-week trend data from `runs/groww/*/report.json`
+
+### 14.4 Acceptance criteria
+
+- [x] Overview returns review count, theme count, avg rating
+- [x] Top themes include `review_share_pct`
+- [x] Trends aggregate ≥2 ISO weeks when reports exist
+- [x] Customer voice includes sentiment % and emerging issues (week-over-week)
+
+---
+
+## 15. Phase 11 — React dashboard (Vercel)
+
+**Status: complete**
+
+### 15.1 Objectives
+
+Stakeholder-facing **web dashboard** (React + Vite + Recharts) deployed on **Vercel**, calling the FastAPI backend on Railway via `VITE_API_URL`.
+
+### 15.2 Dashboard views (product asks)
+
+| Ask | UI component | API |
+|-----|--------------|-----|
+| 1 — Overview card | `OverviewCard` | `GET /api/dashboard/overview` |
+| 2 — Top themes | `TopThemes` | `GET /api/dashboard/themes` |
+| 3 — Trend chart | `TrendChart` | `GET /api/dashboard/trends` |
+| 4 — Customer voice | `CustomerVoice` | `GET /api/dashboard/customer-voice` |
+| 5 — AI agent console | `AgentConsole` | Static on dashboard; live on Operator page |
+
+### 15.3 Tasks
+
+| # | Task | Details |
+|---|------|---------|
+| 11.1 | Vite scaffold | `ui/` — `vite.config.ts`, proxy `/api` in dev |
+| 11.2 | API client | `ui/src/lib/api.ts` — `VITE_API_URL` for Vercel |
+| 11.3 | Dashboard page | Week selector; all five views |
+| 11.4 | Vercel config | `ui/vercel.json`, `ui/.env.example` |
+| 11.5 | Docs | `docs/ui.md` — local dev + Vercel env setup |
+
+### 15.4 Acceptance criteria
+
+- [x] `npm run build` succeeds
+- [x] Local dev: `npm run dev` + `pulse-api` (Vite proxies `/api`)
+- [x] Week selector loads available ISO weeks from API
+- [x] Trend chart renders multi-week series after backfill
+
+---
+
+## 16. Phase 12 — Operator console + production deploy
+
+**Status: in progress**
+
+### 16.1 Objectives
+
+Browser-based **manual pulse trigger** (complementing CLI and Monday scheduler), with **Railway** hosting `pulse-api` and **Vercel** hosting the React UI.
+
+### 16.2 Tasks
+
+| # | Task | Details |
+|---|------|---------|
+| 12.1 | Operator page | `ui/src/pages/OperatorPage.tsx` — Run Pulse, dry-run, mock LLM, force |
+| 12.2 | Background run executor | `api/services/run_executor.py` — thread + ledger sync |
+| 12.3 | Live agent console | Poll `GET /api/runs/jobs/{job_id}` for pipeline steps |
+| 12.4 | Railway deploy | `railway.toml` — `pulse-api`; volume on `runs/` |
+| 12.5 | Vercel deploy | Root `ui/`; set `VITE_API_URL` |
+| 12.6 | CORS | `CORS_ORIGINS` on Railway includes Vercel URL |
+| 12.7 | Historical backfill | `pulse backfill --from-week … --to-week …` for trend charts |
+| 12.8 | Demo seed (dev) | `POST /api/dashboard/seed-demo` or `scripts/seed_dashboard.py` |
+
+### 16.3 Deliverables
+
+- Operator can trigger `pulse run` from browser
+- Vercel UI → Railway API → existing orchestrator → MCP delivery
+- Persistent `runs/` on Railway volume
+
+### 16.4 Acceptance criteria
+
+- [x] Operator page triggers run and shows live pipeline steps
+- [ ] Vercel production URL loads dashboard with Railway API
+- [ ] Railway volume persists ledger + reports across redeploy
+- [x] Backfill populates ≥5 ISO weeks for trends (e.g. `2026-W20`–`W24`)
+
+---
+
+## 17. Environment matrix
 
 | Variable / config | First needed | Used by |
 |-------------------|--------------|---------|
@@ -518,10 +645,12 @@ Point at production Doc, enable `email_mode: send`, schedule weekly Monday IST r
 | `config/mcp-servers.json` | Phase 4 | Delivery API URL + endpoint paths |
 | `config/products.yaml` | Phase 0 | All phases |
 | `delivery.email_mode` | Phase 8–9 | `draft` → `send` at go-live |
+| `CORS_ORIGINS` | Phase 12 | Railway API — allow Vercel + localhost |
+| `VITE_API_URL` | Phase 11–12 | Vercel build — Railway API base URL |
 
 ---
 
-## 15. Definition of done (project)
+## 18. Definition of done (project)
 
 1. `pulse run --product groww` — full pipeline with production config
 2. Groww / Google Play only
@@ -530,10 +659,13 @@ Point at production Doc, enable `email_mode: send`, schedule weekly Monday IST r
 5. Run ledger answers audit questions
 6. Monday 08:00 IST scheduler active
 7. README links to `context.md`, `architecture.md`, this plan
+8. Dashboard on Vercel shows overview, themes, trends, and customer voice from real `report.json` artifacts
+9. Operator can trigger a manual run from the web UI (Phase 12)
+10. `docs/ui.md` documents Vite, Vercel, and Railway setup
 
 ---
 
-## 16. Risk register
+## 19. Risk register
 
 | Risk | Mitigation | Phase |
 |------|------------|-------|
@@ -545,10 +677,13 @@ Point at production Doc, enable `email_mode: send`, schedule weekly Monday IST r
 | OAuth expiry on Railway | Update `GOOGLE_TOKEN_JSON` on hosted server | 4, 5, 8 |
 | Hosted API has no send | Draft-only until server extended; manual send or Phase 9 follow-up | 8, 9 |
 | Premature production send | `draft` until P9 | 8, 9 |
+| Railway ephemeral disk | Mount volume on `runs/`; redeploy wipes ledger without it | 12 |
+| Vercel API URL misconfigured | `VITE_API_URL` required at build time; document in `ui.md` | 11, 12 |
+| Long runs from browser | `pulse-api` on Railway (not Vercel serverless); background thread | 12 |
 
 ---
 
-## 17. Quick reference — what to run per phase
+## 20. Quick reference — what to run per phase
 
 | Phase | How to verify |
 |-------|----------------|
@@ -562,25 +697,30 @@ Point at production Doc, enable `email_mode: send`, schedule weekly Monday IST r
 | 7 | `pulse run` / `pulse dry-run` / `pulse status` |
 | 8 | Staging E2E + runbook checklist |
 | 9 | Scheduled production `pulse run` |
+| 10 | `pulse-api` → `GET /api/dashboard/overview?week=2026-W24` |
+| 11 | `cd ui && npm run dev` → dashboard at `localhost:5173` |
+| 12 | Vercel deploy + Railway `pulse-api`; Operator → Run Pulse |
 
 ---
 
-## 18. Deferred backlog (post-v1)
+## 21. Deferred backlog (post-v1)
 
 | Item | Notes |
 |------|-------|
-| Additional products | `products.yaml` only — same pipeline |
+| Additional products | `products.yaml` only — same pipeline + dashboard |
 | App Store RSS | New ingest module |
-| Metrics dashboard | Optional after P9 |
+| Finer pipeline SSE | Sub-step callbacks in orchestrator for agent console |
+| Auth on dashboard | API key or SSO for public Vercel URL |
 
 ---
 
-## 19. Document index
+## 22. Document index
 
 | Document | Purpose |
 |----------|---------|
 | [`context.md`](context.md) | Product scope and sample output |
-| [`architecture.md`](architecture.md) | Components, MCP contracts, data models |
+| [`architecture.md`](architecture.md) | Components, MCP contracts, data models, UI layer |
 | [`implementation-plan.md`](implementation-plan.md) | This file |
+| [`ui.md`](ui.md) | Vite, Vercel, Railway, API endpoints |
 | [`problemStatement.txt`](problemStatement.txt) | Original problem framing |
 | `docs/runbook.md` | Created in Phase 8 |
