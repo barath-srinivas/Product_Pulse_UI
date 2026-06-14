@@ -76,6 +76,22 @@ class RunTriggerRequest(BaseModel):
     dry_run: bool = False
 
 
+class BackfillRequest(BaseModel):
+    product: str = "groww"
+    from_week: str
+    to_week: str
+    force: bool = False
+    force_delivery: bool = False
+    mock_llm: bool = False
+    stop_on_error: bool = False
+
+
+class BackfillTriggerResponse(BaseModel):
+    job_id: str
+    status: str = "started"
+    weeks: list[str]
+
+
 class RunSummary(BaseModel):
     run_id: str
     product_id: str
@@ -90,7 +106,13 @@ class RunSummary(BaseModel):
 
 
 class RunDetailResponse(RunSummary):
+    job_type: Literal["run", "backfill"] = "run"
     pipeline_steps: list[PipelineStep] = Field(default_factory=list)
+    backfill_weeks: list[str] | None = None
+    backfill_current_week: str | None = None
+    backfill_completed: list[str] = Field(default_factory=list)
+    backfill_skipped: list[str] = Field(default_factory=list)
+    backfill_failed: dict[str, str] = Field(default_factory=dict)
 
 
 class RunListResponse(BaseModel):

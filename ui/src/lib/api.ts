@@ -67,7 +67,13 @@ export interface RunDetail {
   status: string;
   review_count: number | null;
   error: string | null;
+  job_type?: "run" | "backfill";
   pipeline_steps: PipelineStep[];
+  backfill_weeks?: string[];
+  backfill_current_week?: string | null;
+  backfill_completed?: string[];
+  backfill_skipped?: string[];
+  backfill_failed?: Record<string, string>;
 }
 
 export interface RunSummary {
@@ -111,6 +117,21 @@ export const api = {
     dry_run?: boolean;
   }) =>
     fetchJson<{ job_id: string }>("/api/runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+
+  triggerBackfill: (body: {
+    product?: string;
+    from_week: string;
+    to_week: string;
+    force?: boolean;
+    force_delivery?: boolean;
+    mock_llm?: boolean;
+    stop_on_error?: boolean;
+  }) =>
+    fetchJson<{ job_id: string; weeks: string[] }>("/api/runs/backfill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
