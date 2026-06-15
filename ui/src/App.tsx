@@ -10,7 +10,10 @@ export default function App() {
   return (
     <>
       <nav className="nav">
-        <h1>Product Review Pulse</h1>
+        <div className="nav-brand">
+          <h1>ReviewPulse</h1>
+          <p className="nav-subtitle">AI-Powered Customer Intelligence Platform</p>
+        </div>
         <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
           Dashboard
         </NavLink>
